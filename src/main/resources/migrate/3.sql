@@ -1,4 +1,4 @@
-ALTER TABLE animals DELETE COLUMN last_fed;
+ALTER TABLE animals DROP COLUMN last_fed;
 
 CREATE TABLE animal_types
 ( id INT PRIMARY KEY AUTO_INCREMENT

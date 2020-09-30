@@ -16,7 +16,7 @@ public class User {
     static {
         SecretKeyFactory factory = null;
         try {
-            factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

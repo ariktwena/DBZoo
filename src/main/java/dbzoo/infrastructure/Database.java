@@ -158,7 +158,7 @@ public class Database implements AnimalRepository, UserRepository {
 
     @Override
     public User findUser(String name) throws NoSuchElementException {
-        return withConnection(conn -> {
+        try(Connection conn = getConnection()) {
             PreparedStatement s = conn.prepareStatement(
                     "SELECT * FROM users WHERE name = ?;");
             s.setString(1, name);
@@ -169,11 +169,13 @@ public class Database implements AnimalRepository, UserRepository {
                 System.err.println("No version in properties.");
                 throw new NoSuchElementException(name);
             }
-        });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public User findUser(int id) throws NoSuchElementException {
-        return withConnection(conn -> {
+        try(Connection conn = getConnection()) {
             PreparedStatement s = conn.prepareStatement(
                     "SELECT * FROM users WHERE id = ?;");
             s.setInt(1, id);
@@ -184,12 +186,14 @@ public class Database implements AnimalRepository, UserRepository {
                 System.err.println("No version in properties.");
                 throw new NoSuchElementException("No user with id: " + id);
             }
-        });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public Iterable<User> findAllUsers() {
-        return withConnection(conn -> {
+        try (Connection conn = getConnection()) {
             PreparedStatement s = conn.prepareStatement("SELECT * FROM users;");
             ResultSet rs = s.executeQuery();
             ArrayList<User> items = new ArrayList<>();
@@ -197,16 +201,19 @@ public class Database implements AnimalRepository, UserRepository {
                 items.add(loadUser(rs));
             }
             return items;
-        });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public User createUser(String name, byte[] salt, byte[] secret) throws UserExists {
-        int id = withConnection(conn -> {
+        int id;
+        try (Connection conn = getConnection()) {
             var ps =
                     conn.prepareStatement(
                             "INSERT INTO users (name, salt, secret) " +
-                    "VALUE (?,?,?);",
+                                    "VALUE (?,?,?);",
                             Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, name);
             ps.setBytes(2, salt);
@@ -219,27 +226,29 @@ public class Database implements AnimalRepository, UserRepository {
 
             ResultSet rs = ps.getGeneratedKeys();
             if (rs.next()) {
-                return rs.getInt(1);
+                id = rs.getInt(1);
             } else {
                 throw new UserExists(name);
             }
-        });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         return findUser(id);
     }
 
 
-    // Ask me about this in class :D.
+    // // Ask me about this in class :D.
 
-    public <T, E extends Throwable> T withConnection(ConnectionHandler<T, E> ch) throws E {
-        try (Connection conn = getConnection()) {
-            return ch.doSQL(conn);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    // public <T, E extends Throwable> T withConnection(ConnectionHandler<T, E> ch) throws E {
+    //     try (Connection conn = getConnection()) {
+    //         return ch.doSQL(conn);
+    //     } catch (SQLException e) {
+    //         throw new RuntimeException(e);
+    //     }
+    // }
 
-    interface ConnectionHandler<T, E extends Throwable> {
-        T doSQL(Connection conn) throws SQLException, E;
-    }
+    // interface ConnectionHandler<T, E extends Throwable> {
+    //     T doSQL(Connection conn) throws SQLException, E;
+    // }
 
 }
